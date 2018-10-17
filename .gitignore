@@ -1,11 +1,16 @@
 # Floder
 .idea/
+cmake-build-debug/
+
+# cmake
+*.user
 
 # Prerequisites
 *.d
 
 # Compiled Object files
 *.slo
+cmake-build-debug/
 *.lo
 *.o
 *.obj
