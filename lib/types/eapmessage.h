@@ -53,6 +53,8 @@ const std::string VERSION_INFO = "\x06\x07bjQ7SE8BZ3MqHhs3clMregcDY3Y=\x20\x20";
  * Receive Buffer Size
  */
 const size_t BUFFER_SIZE = 1600;
+const size_t ETHMINFRAME = 64;
+const int MD5LEN = 16;
 }
 
 #endif

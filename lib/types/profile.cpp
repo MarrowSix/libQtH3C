@@ -49,5 +49,5 @@ void QH3C::Profile::setPassword(const std::string &pwd)
 
 void QH3C::Profile::setEith(const std::string &eitf)
 {
-    d_eith = eith;
+    d_eitf = eitf;
 }

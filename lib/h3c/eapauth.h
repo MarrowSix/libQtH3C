@@ -22,20 +22,20 @@ class QH3C_EXPORT EapAuth : public QObject
 {
     Q_OBJECT
 public:
-    EapAuth(Profile&);
+    EapAuth(Profile&, const char*);
     ~EapAuth();
     void serveLoop();
 
 private:
-    QByteArray getEAPOL(int8_t, std::string&);
-    QByteArray getEAP(int8_t, int8_t, std::string&, int8_t);
-    void sendStart(const char*);
+    QByteArray getEAPOL(int8_t, const QByteArray&);
+    QByteArray getEAP(int8_t, int8_t, const QByteArray&, int8_t);
+    ssize_t sendStart(const char*);
     void sendLogoff(int8_t);
     void sendResponceId(int8_t);
-    void sendResponceMd5(int8_t);
+    void sendResponceMd5(int8_t, QByteArray&);
     void eapHandler(const char *, ssize_t);
 
-private signals:
+signals:
     void socketCreateFailed();
 
 private:
@@ -43,8 +43,10 @@ private:
     int clientSocket;
     int interfaceIndex;
     char macAddress[6];
+    QByteArray temp;
     struct ifreq tempIfreq;
     struct ethhdr ethernetHeader;
+    struct sockaddr_ll sadr_ll;
     std::string versionInfo;
 };
 
