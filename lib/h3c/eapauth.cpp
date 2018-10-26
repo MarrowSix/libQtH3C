@@ -16,11 +16,11 @@ QH3C::EapAuth::EapAuth(Profile &profile, const char* dest) :
     if (clientSocket < 0) {
         emit this->socketCreateFailed();
     }
-
+    getEthrIndex(clientSocket);
     /*
      * Create the ethernet header
      */
-    mempcpy(ethernetHeader.h_source, getEthrMacAddress(), ETH_ALEN);
+    mempcpy(ethernetHeader.h_source, getEthrMacAddress(clientSocket), ETH_ALEN);
     ethernetHeader.h_proto = ETH_P_PAE;
     mempcpy(ethernetHeader.h_dest, dest, ETH_ALEN);
     ethernetHeader.h_proto = htons(ETH_P_PAE);
@@ -62,22 +62,32 @@ void QH3C::EapAuth::serveLoop() {
 
 }
 
+void QH3C::EapAuth::getEthrIndex(int sock) {
+    memset(&tempIfreq, 0, sizeof(tempIfreq));
+    strncpy(tempIfreq.ifr_name, profile.ethInterface().c_str(),
+            IFNAMSIZ-1);
+    if ((ioctl(clientSocket, SIOCGIFINDEX, &tempIfreq)) < 0) {
+
+    }
+    interfaceIndex = tempIfreq.ifr_ifindex;
+}
+
 const char* QH3C::EapAuth::getEthrMacAddress(int sock){
     /*
      * use the struct ifreq to get the device mac address
      */
-    struct ifreq tempIfreq;
     memset(&tempIfreq, 0, sizeof(tempIfreq));
     strncpy(tempIfreq.ifr_name, profile.ethInterface().c_str(),
             IFNAMSIZ-1);
     if ((ioctl(sock, SIOCGIFHWADDR, &tempIfreq)) < 0) {
 
     }
+    return tempIfreq.ifr_hwaddr.sa_data;
 }
 
 QByteArray QH3C::EapAuth::getEAPOL(int8_t type, const QByteArray &payload) {
     QByteArray tempData;
-    QDataStream eapolStream(tempData);
+    QDataStream eapolStream(&tempData, QIODevice::WriteOnly);
     eapolStream.setByteOrder(QDataStream::BigEndian);
     eapolStream.setVersion(QDataStream::Qt_5_9);
 
@@ -88,7 +98,7 @@ QByteArray QH3C::EapAuth::getEAPOL(int8_t type, const QByteArray &payload) {
 
 QByteArray QH3C::EapAuth::getEAP(int8_t code, int8_t identifer, const QByteArray &data, int8_t type = 0) {
     QByteArray tempData;
-    QDataStream eapStream(tempData);
+    QDataStream eapStream(&tempData, QIODevice::WriteOnly);
     eapStream.setByteOrder(QDataStream::BigEndian);
     eapStream.setVersion(QDataStream::Qt_5_9);
     if (EAP_CODE_SUCCESS == code || EAP_CODE_FAILURE == code) {
@@ -104,15 +114,17 @@ ssize_t QH3C::EapAuth::sendStart(const char* dest) {
     /*
      * dest addr struct
      */
-    char *sendbuff = new char[ETHMINFRAME];
+
     temp.clear();
     QByteArray tempData = getEAPOL(EAPOL_TYPE_START, temp);
+    size_t len = tempData.size() + sizeof(ethhdr);
+    char *sendbuff = new char[len];
 
-    memset(sendbuff, 0, ETHMINFRAME);
+    memset(sendbuff, 0, len);
     mempcpy(sendbuff, &ethernetHeader, sizeof(ethhdr));
     mempcpy(sendbuff+sizeof(ethhdr), tempData.constData(), (size_t)tempData.size());
 
-    ssize_t status = sendto(clientSocket, sendbuff, ETHMINFRAME, 0, (const struct sockaddr*)&sadr_ll, sizeof(sadr_ll));
+    ssize_t status = sendto(clientSocket, sendbuff, len, 0, (const struct sockaddr*)&sadr_ll, sizeof(sadr_ll));
     if (status < 0) {
         qDebug() << "EAP Start Failed...";
     }

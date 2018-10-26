@@ -28,6 +28,7 @@ public:
     void serveLoop();
 
 private:
+    void getEthrIndex(int sock);
     const char* getEthrMacAddress(int sock);
     QByteArray getEAPOL(int8_t, const QByteArray&);
     QByteArray getEAP(int8_t, int8_t, const QByteArray&, int8_t);
@@ -45,8 +46,8 @@ private:
     Profile profile;
     int clientSocket;
     int interfaceIndex;
-    char macAddress[6];
     QByteArray temp;
+    struct ifreq tempIfreq;
     struct ethhdr ethernetHeader;
     struct sockaddr_ll sadr_ll;
     std::string versionInfo;
