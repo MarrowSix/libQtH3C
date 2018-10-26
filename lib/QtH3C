@@ -1,4 +1,5 @@
 #include "types/eapmessage.h"
 #include "types/profile.h"
 #include "util/export.h"
+#include "util/common.h"
 #include "h3c/eapauth.h"

@@ -17,15 +17,18 @@ public:
     const std::string& id() const;
     const std::string& password() const;
     const std::string& ethInterface() const;
+    const bool isDaemon() const;
 
     void setId(const std::string& id);
     void setPassword(const std::string& pwd);
     void setEith(const std::string& eitf);
+    void setDaemon(const bool& daemon);
 
 private:
     std::string d_id;
     std::string d_pwd;
     std::string d_eitf;
+    bool d_daemon;
 };
 
 }

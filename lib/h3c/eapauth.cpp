@@ -1,4 +1,13 @@
+#include <fcntl.h>
+#include <unistd.h>
+#include <signal.h>
+#include <sys/stat.h>
 #include "eapauth.h"
+
+QH3C::EapAuth::EapAuth()
+{
+
+}
 
 QH3C::EapAuth::EapAuth(Profile &profile, const char* dest) :
     profile(profile)
@@ -9,25 +18,12 @@ QH3C::EapAuth::EapAuth(Profile &profile, const char* dest) :
     }
 
     /*
-     * use the struct ifreq to get the device index
+     * Create the ethernet header
      */
-    memset(&tempIfreq, 0, sizeof(tempIfreq));
-    strncpy(tempIfreq.ifr_name, profile.ethInterface().c_str(),
-            IFNAMSIZ-1);
-    if ((ioctl(clientSocket, SIOCGIFINDEX, &tempIfreq)) < 0) {}
-    interfaceIndex = tempIfreq.ifr_ifindex;
-
-    /*
-     * use the struct ifreq to get the device mac address
-     */
-    memset(&tempIfreq, 0, sizeof(tempIfreq));
-    strncpy(tempIfreq.ifr_name, profile.ethInterface().c_str(),
-            IFNAMSIZ-1);
-    if ((ioctl(clientSocket, SIOCGIFHWADDR, &tempIfreq)) < 0) {}
-//    strncpy(macAddress, tempIfreq.ifr_hwaddr.sa_data, ETH_ALEN);
-    mempcpy(ethernetHeader.h_source, tempIfreq.ifr_hwaddr.sa_data, ETH_ALEN);
+    mempcpy(ethernetHeader.h_source, getEthrMacAddress(), ETH_ALEN);
     ethernetHeader.h_proto = ETH_P_PAE;
     mempcpy(ethernetHeader.h_dest, dest, ETH_ALEN);
+    ethernetHeader.h_proto = htons(ETH_P_PAE);
     /*
      * Version Info, get by wireshark
      */
@@ -64,6 +60,19 @@ void QH3C::EapAuth::serveLoop() {
         qDebug() << "Start EAP Authenticate Failed!";
     }
 
+}
+
+const char* QH3C::EapAuth::getEthrMacAddress(int sock){
+    /*
+     * use the struct ifreq to get the device mac address
+     */
+    struct ifreq tempIfreq;
+    memset(&tempIfreq, 0, sizeof(tempIfreq));
+    strncpy(tempIfreq.ifr_name, profile.ethInterface().c_str(),
+            IFNAMSIZ-1);
+    if ((ioctl(sock, SIOCGIFHWADDR, &tempIfreq)) < 0) {
+
+    }
 }
 
 QByteArray QH3C::EapAuth::getEAPOL(int8_t type, const QByteArray &payload) {
@@ -109,6 +118,46 @@ ssize_t QH3C::EapAuth::sendStart(const char* dest) {
     }
     delete[] sendbuff;
     return status;
+}
+
+void QH3C::EapAuth::daemonlize() {
+    /*
+     * if already be a daemon process
+     */
+    if (1 == getppid()) {
+        return;
+    }
+    int i = fork();
+    if (i < 0)
+        exit(1);
+    if (i > 0)
+        exit(0);
+    /*
+     * obtain a new process group
+     */
+    setsid();
+    /*
+     * close all descriptors
+     */
+    for (int j = getdtablesize(); i>=0; --i) {
+        close(i);
+    }
+    i = open("/dev/null", O_RDWR);
+    dup(i);
+    dup(i);
+    umask(027);
+
+    chdir(QH3C::RUNNING_DIR);
+    int lockfile = open(QH3C::LOCK_FILE,O_RDWR|O_CREAT, 0640);
+    if (lockfile < 0) {
+        exit(1);
+    }
+    if (lockf(lockfile, F_TLOCK, 0) < 0) {
+        exit(0);
+    }
+    char str[10];
+    sprintf(str, "%d\n", getpid());
+    write(lockfile, str, strlen(str));
 }
 
 void QH3C::EapAuth::sendLogoff(int8_t id) {
@@ -191,6 +240,8 @@ void QH3C::EapAuth::eapHandler(const char *packet, ssize_t len) {
 
     if (EAP_CODE_SUCCESS == eapCode) {
         qDebug() << "Got EAP Success";
+        if (profile.isDaemon())
+            daemonlize();
     } else if (EAP_CODE_FAILURE == eapCode) {
         qDebug() << "Got EAP Failure";
         exit(-1);

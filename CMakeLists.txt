@@ -27,3 +27,4 @@ else()
 endif()
 
 add_subdirectory(lib)
+add_subdirectory(qth3c)

@@ -1,5 +1,9 @@
+list(APPEND SOURCE
+    ${CMAKE_CURRENT_LIST_DIR}/common.cpp)
+
 set(UTIL_HEADERS
-    ${CMAKE_CURRENT_LIST_DIR}/export.h)
+    ${CMAKE_CURRENT_LIST_DIR}/export.h
+    ${CMAKE_CURRENT_LIST_DIR}/common.h)
 
 install(FILES ${UTIL_HEADERS}
     DESTINATION ${INCLUDE_INSTALL_DIR}/${PROJECT_NAME}/util)

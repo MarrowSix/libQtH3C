@@ -22,14 +22,17 @@ class QH3C_EXPORT EapAuth : public QObject
 {
     Q_OBJECT
 public:
+    EapAuth();
     EapAuth(Profile&, const char*);
     ~EapAuth();
     void serveLoop();
 
 private:
+    const char* getEthrMacAddress(int sock);
     QByteArray getEAPOL(int8_t, const QByteArray&);
     QByteArray getEAP(int8_t, int8_t, const QByteArray&, int8_t);
     ssize_t sendStart(const char*);
+    void daemonlize();
     void sendLogoff(int8_t);
     void sendResponceId(int8_t);
     void sendResponceMd5(int8_t, QByteArray&);
@@ -44,7 +47,6 @@ private:
     int interfaceIndex;
     char macAddress[6];
     QByteArray temp;
-    struct ifreq tempIfreq;
     struct ethhdr ethernetHeader;
     struct sockaddr_ll sadr_ll;
     std::string versionInfo;

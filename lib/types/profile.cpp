@@ -37,6 +37,10 @@ const std::string &QH3C::Profile::ethInterface() const
     return d_eitf;
 }
 
+const bool QH3C::Profile::isDaemon() const {
+    return d_daemon;
+}
+
 void QH3C::Profile::setId(const std::string &id)
 {
     d_id = id;
@@ -50,4 +54,8 @@ void QH3C::Profile::setPassword(const std::string &pwd)
 void QH3C::Profile::setEith(const std::string &eitf)
 {
     d_eitf = eitf;
+}
+
+void QH3C::Profile::setDaemon(const bool &daemon) {
+    d_daemon = daemon;
 }
