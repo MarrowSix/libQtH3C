@@ -126,7 +126,7 @@ ssize_t QH3C::EapAuth::sendStart(const char* dest) {
 
     ssize_t status = sendto(clientSocket, sendbuff, len, 0, (const struct sockaddr*)&sadr_ll, sizeof(sadr_ll));
     if (status < 0) {
-        qDebug() << "EAP Start Failed...";
+        qDebug() << ">> EAP Start Failed...";
     }
     delete[] sendbuff;
     return status;
@@ -173,31 +173,32 @@ void QH3C::EapAuth::daemonlize() {
 }
 
 void QH3C::EapAuth::sendLogoff(int8_t id) {
-    char *sendbuff = new char[ETHMINFRAME];
     temp.clear();
     QByteArray tempData = getEAPOL(EAPOL_TYPE_LOGOFF, temp);
 
-    memset(sendbuff, 0, ETHMINFRAME);
+    size_t len = tempData.size() + sizeof(ethhdr);
+    char *sendbuff = new char[len];
+    memset(sendbuff, 0, len);
     mempcpy(sendbuff, &ethernetHeader, sizeof(ethhdr));
     mempcpy(sendbuff+sizeof(ethhdr), tempData.constData(), (size_t)tempData.size());
 
-    sendto(clientSocket, sendbuff, ETHMINFRAME, 0, (const struct sockaddr*)&sadr_ll, sizeof(sadr_ll));
+    sendto(clientSocket, sendbuff, len, 0, (const struct sockaddr*)&sadr_ll, sizeof(sadr_ll));
     qDebug() << ">> Sending Logoff";
     delete[] sendbuff;
 }
 
 void QH3C::EapAuth::sendResponceId(int8_t id) {
-    char *sendbuff = new char[ETHMINFRAME];
-
     temp.clear();
     temp.append(versionInfo.c_str());
     temp.append(profile.id().c_str());
     QByteArray tempData = getEAPOL(EAPOL_PACKE, getEAP(EAP_CODE_RESPONSE, id, temp, EAP_TYPE_ID));
 
-    memset(sendbuff, 0, ETHMINFRAME);
+    size_t len = tempData.size() + sizeof(ethhdr);
+    char *sendbuff = new char[len];
+    memset(sendbuff, 0, len);
     mempcpy(sendbuff, &ethernetHeader, sizeof(ethhdr));
     mempcpy(sendbuff+sizeof(ethhdr), tempData.constData(), (size_t)tempData.size());
-    sendto(clientSocket, sendbuff, ETHMINFRAME, 0, (const struct sockaddr*)&sadr_ll, sizeof(sadr_ll));
+    sendto(clientSocket, sendbuff, len, 0, (const struct sockaddr*)&sadr_ll, sizeof(sadr_ll));
     qDebug() << ">> Sending Response of ID";
     delete[] sendbuff;
 }
@@ -215,15 +216,16 @@ void QH3C::EapAuth::sendResponceMd5(int8_t id, QByteArray &md5data) {
     }
 
     mempcpy(resp+sizeof(int8_t)+MD5LEN, profile.id().c_str(), profile.id().size());
-    char *sendbuff = new char[ETHMINFRAME];
     temp.clear();
     temp.append(resp, sizeof(int8_t) + MD5LEN + profile.id().size());
     QByteArray tempData = getEAPOL(EAPOL_PACKE, getEAP(EAP_CODE_RESPONSE, id, temp, EAP_TYPE_MD5));
 
-    memset(sendbuff, 0, ETHMINFRAME);
+    size_t len = tempData.size() + sizeof(ethhdr);
+    char *sendbuff = new char[len];
+    memset(sendbuff, 0, len);
     mempcpy(sendbuff, &ethernetHeader, sizeof(ethhdr));
     mempcpy(sendbuff+ sizeof(ethhdr), tempData.constData(), (size_t)tempData.size());
-    sendto(clientSocket, sendbuff, ETHMINFRAME, 0, (const struct sockaddr*)&sadr_ll, sizeof(sadr_ll));
+    sendto(clientSocket, sendbuff, len, 0, (const struct sockaddr*)&sadr_ll, sizeof(sadr_ll));
     qDebug() << ">> Sending Response of MD5 Challenge";
     delete[] sendbuff;
 }

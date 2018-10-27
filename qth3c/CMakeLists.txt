@@ -1,7 +1,7 @@
 set(TASK "qth3c")
 
 set(SOURCE
-    main.cpp client.cpp client.h)
+    main.cpp client.cpp client.h utils.h utils.cpp)
 
 add_executable(${TASK} ${SOURCE})
 
