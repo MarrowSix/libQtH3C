@@ -104,7 +104,7 @@ QByteArray QH3C::EapAuth::getEAP(int8_t code, int8_t identifer, const QByteArray
     if (EAP_CODE_SUCCESS == code || EAP_CODE_FAILURE == code) {
         eapStream << code << identifer << (int16_t)(2*sizeof(int8_t) + sizeof(int16_t));
     } else if (EAP_CODE_REQUEST == code || EAP_CODE_RESPONSE == code) {
-        eapStream << code << identifer << (int16_t)(2*sizeof(int8_t) + sizeof(int16_t) + data.size()) << type;
+        eapStream << code << identifer << (int16_t)(3*sizeof(int8_t) + sizeof(int16_t) + data.size()) << type;
         eapStream.writeRawData(data.constData(), data.size());
     }
     return tempData;
@@ -126,7 +126,9 @@ ssize_t QH3C::EapAuth::sendStart(const char* dest) {
 
     ssize_t status = sendto(clientSocket, sendbuff, len, 0, (const struct sockaddr*)&sadr_ll, sizeof(sadr_ll));
     if (status < 0) {
-        qDebug() << ">> EAP Start Failed...";
+        QDebug(QtMsgType::QtCriticalMsg).noquote() << "EAP Start Failed...";
+    } else {
+        QDebug(QtMsgType::QtInfoMsg).noquote() << "EAP Start.";
     }
     delete[] sendbuff;
     return status;
@@ -183,7 +185,7 @@ void QH3C::EapAuth::sendLogoff(int8_t id) {
     mempcpy(sendbuff+sizeof(ethhdr), tempData.constData(), (size_t)tempData.size());
 
     sendto(clientSocket, sendbuff, len, 0, (const struct sockaddr*)&sadr_ll, sizeof(sadr_ll));
-    qDebug() << ">> Sending Logoff";
+    QDebug(QtMsgType::QtInfoMsg).noquote() << "Sending Logoff";
     delete[] sendbuff;
 }
 
@@ -191,6 +193,7 @@ void QH3C::EapAuth::sendResponceId(int8_t id) {
     temp.clear();
     temp.append(versionInfo.c_str());
     temp.append(profile.id().c_str());
+    int l = temp.size();
     QByteArray tempData = getEAPOL(EAPOL_PACKE, getEAP(EAP_CODE_RESPONSE, id, temp, EAP_TYPE_ID));
 
     size_t len = tempData.size() + sizeof(ethhdr);
@@ -199,20 +202,18 @@ void QH3C::EapAuth::sendResponceId(int8_t id) {
     mempcpy(sendbuff, &ethernetHeader, sizeof(ethhdr));
     mempcpy(sendbuff+sizeof(ethhdr), tempData.constData(), (size_t)tempData.size());
     sendto(clientSocket, sendbuff, len, 0, (const struct sockaddr*)&sadr_ll, sizeof(sadr_ll));
-    qDebug() << ">> Sending Response of ID";
+    QDebug(QtMsgType::QtInfoMsg).noquote() << "Sending Response of ID";
     delete[] sendbuff;
 }
 
 void QH3C::EapAuth::sendResponceMd5(int8_t id, QByteArray &md5data) {
     char *md5 = new char[MD5LEN];
-    mempcpy(md5, profile.password().c_str(), profile.password().size());
-    if (profile.password().size() < MD5LEN) {
-        memset(md5, 0, MD5LEN-(profile.password().size()));
-    }
+    memset(md5, 0, MD5LEN);
+    mempcpy(md5, profile.password().c_str(), (profile.password().size() > MD5LEN ? MD5LEN : profile.password().size()));
     char *resp = new char[sizeof(int8_t) + MD5LEN + profile.id().size()];
     resp[0] = MD5LEN;
     for (int i=1; i<=MD5LEN; i++) {
-        resp[i] = md5[i] ^ md5data[i];
+        resp[i] = md5[i-1] ^ md5data[i];
     }
 
     mempcpy(resp+sizeof(int8_t)+MD5LEN, profile.id().c_str(), profile.id().size());
@@ -226,8 +227,10 @@ void QH3C::EapAuth::sendResponceMd5(int8_t id, QByteArray &md5data) {
     mempcpy(sendbuff, &ethernetHeader, sizeof(ethhdr));
     mempcpy(sendbuff+ sizeof(ethhdr), tempData.constData(), (size_t)tempData.size());
     sendto(clientSocket, sendbuff, len, 0, (const struct sockaddr*)&sadr_ll, sizeof(sadr_ll));
-    qDebug() << ">> Sending Response of MD5 Challenge";
+    QDebug(QtMsgType::QtInfoMsg).noquote() << "Sending Response of MD5 Challenge";
     delete[] sendbuff;
+    delete[] resp;
+    delete[] md5;
 }
 
 void QH3C::EapAuth::eapHandler(const char *packet, ssize_t len) {
@@ -249,32 +252,31 @@ void QH3C::EapAuth::eapHandler(const char *packet, ssize_t len) {
     eapIn >> eapolVersion >> eapolType >> eapolLength;
     eapIn >> eapCode >> eapIdentifier >> eapLength;
     if (EAPOL_PACKE != eapolType) {
-        qDebug() << "Got Unknown EAPOL packet type " << eapolType;
+        QDebug(QtMsgType::QtInfoMsg).noquote() << "Got Unknown EAPOL packet type " << eapolType;
     }
 
     if (EAP_CODE_SUCCESS == eapCode) {
-        qDebug() << "Got EAP Success";
+        QDebug(QtMsgType::QtInfoMsg).noquote() << "Got EAP Success";
         if (profile.isDaemon())
             daemonlize();
     } else if (EAP_CODE_FAILURE == eapCode) {
-        qDebug() << "Got EAP Failure";
+        QDebug(QtMsgType::QtCriticalMsg).noquote() << "Got EAP Failure";
         exit(-1);
     } else if (EAP_CODE_RESPONSE == eapCode) {
-        qDebug() << "Got Unknown EAP Response";
+        QDebug(QtMsgType::QtInfoMsg).noquote() << "Got Unknown EAP Response";
     } else if (EAP_CODE_REQUEST == eapCode) {
         int8_t eapType = 0;
-        int eapLen = eapLength - sizeof(int8_t)*3 - sizeof(int16_t);
-        char *eapTypeData = new char[eapLen];
         eapIn >> eapType;
-        eapIn.readRawData(eapTypeData, eapLen);
         if (EAP_TYPE_ID == eapType) {
-            qDebug() << "Got EAP Request for identity";
+            QDebug(QtMsgType::QtInfoMsg).noquote() << "Got EAP Request for identity";
             sendResponceId(eapIdentifier);
         } else if (EAP_TYPE_MD5 == eapType) {
-            qDebug() << "Got EAP Request for MD5-Challenge";
-            int8_t eapType;
-            QByteArray md5data;
-            eapIn >> eapType >> md5data;
+            QDebug(QtMsgType::QtInfoMsg).noquote() << "Got EAP Request for MD5-Challenge";
+            int eapLen = eapLength - sizeof(int8_t)*3 - sizeof(int16_t);
+            char *eapTypeData = new char[eapLen];
+            eapIn.readRawData(eapTypeData, eapLen);
+            QByteArray md5data(eapTypeData, eapLen);
+
             sendResponceMd5(eapIdentifier, md5data);
         }
     }

@@ -82,6 +82,7 @@ int main(int argc, char *argv[])
     Utils::logLevel = stringToLogLevel(parser.value(log));
     Client c;
     if (!c.readConfig(parser.value(configFile))) {
+        QDebug(QtMsgType::QtInfoMsg).noquote() << "Ues Argument From Console";
         c.setup(parser.value(eitf),
                 parser.value(userId),
                 parser.value(userPwd),

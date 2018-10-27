@@ -45,9 +45,10 @@ const int8_t EAP_TYPE_ID = 1;
 const int8_t EAP_TYPE_MD5 = 4;
 
 /*
- * Unknow
+ * For Unknow reason, have to add '\' before char 'b'.
+ * Otherwise, the '\x07b' will be parser as '{'.
  */
-const std::string VERSION_INFO = "\x06\x07bjQ7SE8BZ3MqHhs3clMregcDY3Y=\x20\x20";
+const std::string VERSION_INFO = "\x06\x07\bjQ7SE8BZ3MqHhs3clMregcDY3Y=\x20\x20";
 
 /*
  * Receive Buffer Size

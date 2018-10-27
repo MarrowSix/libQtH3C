@@ -5,6 +5,8 @@
 #include <iostream>
 #include "utils.h"
 
+Utils::LogLevel Utils::logLevel = Utils::LogLevel::INFO;
+
 void Utils::messageHandler(QtMsgType type, const QMessageLogContext &context, const QString &msg) {
     const std::string timestamp =
             QDateTime::currentDateTime().toString("yyyy-MM-ddTHH:mm:ss.zzz").toStdString();
