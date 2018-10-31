@@ -57,7 +57,7 @@ void QH3C::EapAuth::serveLoop() {
             eapHandler(receive+sizeof(struct ethhdr), recvLen-sizeof(struct ethhdr));
         }
     } catch (...) {
-        qDebug() << "Start EAP Authenticate Failed!";
+        QDebug(QtMsgType::QtCriticalMsg).noquote() << "Start EAP Authenticate Failed!";
     }
 
 }
@@ -213,7 +213,7 @@ void QH3C::EapAuth::sendResponceMd5(int8_t id, QByteArray &md5data) {
     char *resp = new char[sizeof(int8_t) + MD5LEN + profile.id().size()];
     resp[0] = MD5LEN;
     for (int i=1; i<=MD5LEN; i++) {
-        resp[i] = md5[i-1] ^ md5data[i];
+        resp[i] = char((uint8_t)md5[i-1] ^ (uint8_t)md5data[i-1]);
     }
 
     mempcpy(resp+sizeof(int8_t)+MD5LEN, profile.id().c_str(), profile.id().size());
@@ -261,7 +261,7 @@ void QH3C::EapAuth::eapHandler(const char *packet, ssize_t len) {
             daemonlize();
     } else if (EAP_CODE_FAILURE == eapCode) {
         QDebug(QtMsgType::QtCriticalMsg).noquote() << "Got EAP Failure";
-        exit(-1);
+//        exit(-1);
     } else if (EAP_CODE_RESPONSE == eapCode) {
         QDebug(QtMsgType::QtInfoMsg).noquote() << "Got Unknown EAP Response";
     } else if (EAP_CODE_REQUEST == eapCode) {
@@ -275,9 +275,11 @@ void QH3C::EapAuth::eapHandler(const char *packet, ssize_t len) {
             int eapLen = eapLength - sizeof(int8_t)*3 - sizeof(int16_t);
             char *eapTypeData = new char[eapLen];
             eapIn.readRawData(eapTypeData, eapLen);
-            QByteArray md5data(eapTypeData, eapLen);
+            QByteArray md5data(eapTypeData+1, eapLen);
 
             sendResponceMd5(eapIdentifier, md5data);
+        } else {
+            QDebug(QtMsgType::QtInfoMsg).noquote() << "Got Unkonwn Request Type " << eapType;
         }
     }
 }
