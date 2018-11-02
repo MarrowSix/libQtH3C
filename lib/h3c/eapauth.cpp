@@ -261,7 +261,7 @@ void QH3C::EapAuth::eapHandler(const char *packet, ssize_t len) {
             daemonlize();
     } else if (EAP_CODE_FAILURE == eapCode) {
         QDebug(QtMsgType::QtCriticalMsg).noquote() << "Got EAP Failure";
-//        exit(-1);
+        exit(-1);
     } else if (EAP_CODE_RESPONSE == eapCode) {
         QDebug(QtMsgType::QtInfoMsg).noquote() << "Got Unknown EAP Response";
     } else if (EAP_CODE_REQUEST == eapCode) {
@@ -279,7 +279,7 @@ void QH3C::EapAuth::eapHandler(const char *packet, ssize_t len) {
 
             sendResponceMd5(eapIdentifier, md5data);
         } else {
-            QDebug(QtMsgType::QtInfoMsg).noquote() << "Got Unkonwn Request Type " << eapType;
+            QDebug(QtMsgType::QtInfoMsg).noquote() << "Got Unknown Request Type " << eapType;
         }
     }
 }

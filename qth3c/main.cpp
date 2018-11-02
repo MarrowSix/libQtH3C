@@ -66,7 +66,8 @@ int main(int argc, char *argv[])
             "password");
     QCommandLineOption daemon("d",
             "whether to run as daemon process",
-            "daemon");
+            "daemon"
+            "False");
     QCommandLineOption log("L",
             "logging level. Valid levels are: debug, info, warn, error, fatal.",
             "log_level",
