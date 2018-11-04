@@ -9,7 +9,7 @@ option(USE_CONAN "Use C++ Package Manager Conan" OFF)
 
 set(LIB_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/lib
     CACHE PATH "Installation directory for libraries")
-set(CMAKE_INCLUDE_DIR ${CMAKE_INSTALL_PREFIX}/include
+set(INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/include
     CACHE PATH "Installation directory for headers")
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOMOC ON)
