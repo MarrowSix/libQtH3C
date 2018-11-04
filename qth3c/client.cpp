@@ -2,6 +2,7 @@
 // Created by arshrow on 18-10-24.
 //
 
+#include <unistd.h>
 #include "client.h"
 
 Client::Client()
@@ -57,6 +58,10 @@ void Client::setup(const QString &eitf,
 }
 
 bool Client::start() {
+    if (0 != getuid()) {
+        QDebug(QtMsgType::QtInfoMsg).noquote() << "Permission Denied! Please try to use \"sudo\"";
+        exit(-1);
+    }
     auth = new QH3C::EapAuth(profile, QH3C::PAE_GROUP_ADDR);
     auth->serveLoop();
     return true;

@@ -3,7 +3,6 @@
 #include <QtH3C>
 #include <signal.h>
 #include <iostream>
-#include <zconf.h>
 #include "client.h"
 #include "utils.h"
 
@@ -35,10 +34,6 @@ Utils::LogLevel stringToLogLevel(const QString& str)
 
 int main(int argc, char *argv[])
 {
-    if (0 != getuid()) {
-        std::cout << "Permission Denied! Please try to add \"sudo\"" << std::endl;
-        exit(-1);
-    }
     qInstallMessageHandler(Utils::messageHandler);
 
     QCoreApplication a(argc, argv);
@@ -66,8 +61,7 @@ int main(int argc, char *argv[])
             "password");
     QCommandLineOption daemon("d",
             "whether to run as daemon process",
-            "daemon"
-            "False");
+            "daemon");
     QCommandLineOption log("L",
             "logging level. Valid levels are: debug, info, warn, error, fatal.",
             "log_level",
@@ -89,6 +83,7 @@ int main(int argc, char *argv[])
                 parser.value(userPwd),
                 parser.isSet(daemon));
     }
+
     c.start();
     return a.exec();
 }
