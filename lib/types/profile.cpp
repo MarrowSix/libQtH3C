@@ -7,14 +7,16 @@ QH3C::Profile::Profile()
 QH3C::Profile::Profile(const QH3C::Profile &b) :
     d_id(b.d_id),
     d_pwd(b.d_pwd),
-    d_eitf(b.d_eitf)
+    d_eitf(b.d_eitf),
+    d_daemon(b.d_daemon)
 {
 }
 
 QH3C::Profile::Profile(QH3C::Profile &&b) :
     d_id(std::move(b.d_id)),
     d_pwd(std::move(b.d_pwd)),
-    d_eitf(std::move(b.d_eitf))
+    d_eitf(std::move(b.d_eitf)),
+    d_daemon(std::move(b.d_daemon))
 {
 }
 
@@ -56,6 +58,6 @@ void QH3C::Profile::setEith(const std::string &eitf)
     d_eitf = eitf;
 }
 
-void QH3C::Profile::setDaemon(const bool &daemon) {
+void QH3C::Profile::setDaemon(const bool daemon) {
     d_daemon = daemon;
 }

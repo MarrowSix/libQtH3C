@@ -59,9 +59,9 @@ int main(int argc, char *argv[])
     QCommandLineOption userPwd("p",
             "specify user password",
             "password");
-    QCommandLineOption daemon("d",
-            "whether to run as daemon process",
-            "daemon");
+    QCommandLineOption daemon(
+            QStringList() << "d" << "daemon",
+            "run as daemon process");
     QCommandLineOption log("L",
             "logging level. Valid levels are: debug, info, warn, error, fatal. default:\"info\"",
             "log_level",
@@ -74,18 +74,18 @@ int main(int argc, char *argv[])
     parser.addOption(log);
     parser.process(a);
 
-    if (1 == argc) {
-        parser.showHelp();
-    }
-
     Utils::logLevel = stringToLogLevel(parser.value(log));
     Client c;
     if (!c.readConfig(parser.value(configFile))) {
+        if (1 == argc) {
+            parser.showHelp();
+        }
+
         QDebug(QtMsgType::QtInfoMsg).noquote() << "Ues Argument From Console";
         c.setup(parser.value(eitf),
                 parser.value(userId),
                 parser.value(userPwd),
-                parser.isSet("d"));
+                parser.isSet(daemon));
     }
 
     c.start();

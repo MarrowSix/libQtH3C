@@ -33,11 +33,12 @@ private:
     QByteArray getEAPOL(int8_t, const QByteArray&);
     QByteArray getEAP(int8_t, int8_t, const QByteArray&, int8_t);
     ssize_t sendStart(const char*);
-    void daemonlize();
+    void daemonlize(std::string device="/dev/null");
     void sendLogoff(int8_t);
     void sendResponceId(int8_t);
     void sendResponceMd5(int8_t, QByteArray&);
     void eapHandler(const char *, ssize_t);
+    static void sigintHandler(int sValue);
 
 signals:
     void socketCreateFailed();
@@ -51,6 +52,8 @@ private:
     struct ethhdr ethernetHeader;
     struct sockaddr_ll sadr_ll;
     std::string versionInfo;
+
+    static bool siginterrupted;
 };
 
 }

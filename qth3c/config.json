@@ -1,0 +1,6 @@
+{
+    "ether_interface": "eth0",
+    "identify_id": "id",
+    "password": "pa",
+    "http_proxy": false
+}

@@ -22,7 +22,7 @@ public:
     void setId(const std::string& id);
     void setPassword(const std::string& pwd);
     void setEith(const std::string& eitf);
-    void setDaemon(const bool& daemon);
+    void setDaemon(const bool daemon);
 
 private:
     std::string d_id;

@@ -2,7 +2,10 @@
 #include <unistd.h>
 #include <signal.h>
 #include <sys/stat.h>
+#include <signal.h>
 #include "eapauth.h"
+
+bool QH3C::EapAuth::siginterrupted = false;
 
 QH3C::EapAuth::EapAuth()
 {
@@ -42,6 +45,11 @@ void QH3C::EapAuth::serveLoop() {
     try {
         if (sendStart(PAE_GROUP_ADDR) < 0) {
         }
+        struct sigaction action;
+        action.sa_handler = sigintHandler;
+        action.sa_flags = 0;
+        sigemptyset(&action.sa_mask);
+        sigaction(SIGINT, &action, NULL);
         while (true) {
             char *receive = nullptr;
             struct sockaddr saddr;
@@ -55,9 +63,13 @@ void QH3C::EapAuth::serveLoop() {
             }
             recvLen = recvfrom(clientSocket, receive, BUFFER_SIZE, 0, &saddr, (socklen_t *)(&sdrlen));
             eapHandler(receive+sizeof(struct ethhdr), recvLen-sizeof(struct ethhdr));
+            if (siginterrupted) {
+                throw siginterrupted;
+            }
         }
-    } catch (...) {
-        QDebug(QtMsgType::QtCriticalMsg).noquote() << "Start EAP Authenticate Failed!";
+    } catch (bool e) {
+        QDebug(QtMsgType::QtInfoMsg).noquote() << "Get KeyInterrupt, Kill Processing...";
+        exit(1);
     }
 
 }
@@ -134,17 +146,17 @@ ssize_t QH3C::EapAuth::sendStart(const char* dest) {
     return status;
 }
 
-void QH3C::EapAuth::daemonlize() {
+void QH3C::EapAuth::daemonlize(std::string device) {
     /*
      * if already be a daemon process
      */
     if (1 == getppid()) {
         return;
     }
-    int i = fork();
-    if (i < 0)
+    int pid = fork();
+    if (pid < 0)
         exit(1);
-    if (i > 0)
+    if (pid > 0)
         exit(0);
     /*
      * obtain a new process group
@@ -153,12 +165,22 @@ void QH3C::EapAuth::daemonlize() {
     /*
      * close all descriptors
      */
-    for (int j = getdtablesize(); i>=0; --i) {
-        close(i);
+    for (int i = getdtablesize(); i>=0; --i) {
+        close(pid);
     }
-    i = open("/dev/null", O_RDWR);
-    dup(i);
-    dup(i);
+
+    /*
+     * fork again to get rid of tty
+     */
+    int pid_t = fork();
+    if (pid_t < 0)
+        exit(1);
+    if (pid_t > 0)
+        exit(0);
+
+    int out = open(device.c_str(), O_RDWR);
+    dup(out);
+    dup(out);
     umask(027);
 
     chdir(QH3C::RUNNING_DIR);
@@ -257,8 +279,10 @@ void QH3C::EapAuth::eapHandler(const char *packet, ssize_t len) {
 
     if (EAP_CODE_SUCCESS == eapCode) {
         QDebug(QtMsgType::QtInfoMsg).noquote() << "Got EAP Success";
-        if (profile.isDaemon())
+        if (profile.isDaemon()) {
+            QDebug(QtMsgType::QtInfoMsg).noquote() << "Created Daemon Process";
             daemonlize();
+        }
     } else if (EAP_CODE_FAILURE == eapCode) {
         QDebug(QtMsgType::QtCriticalMsg).noquote() << "Got EAP Failure";
         exit(-1);
@@ -282,4 +306,8 @@ void QH3C::EapAuth::eapHandler(const char *packet, ssize_t len) {
             QDebug(QtMsgType::QtInfoMsg).noquote() << "Got Unknown Request Type " << eapType;
         }
     }
+}
+
+void QH3C::EapAuth::sigintHandler(int sValue) {
+    siginterrupted = true;
 }
